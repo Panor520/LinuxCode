@@ -9,7 +9,6 @@ myDebugArgs= -Wall -g
 head_Path=./inc 
 
 
-
 all:math.out
 
 
@@ -20,6 +19,9 @@ math.out:$(obj)
 $(obj):./obj/%.o:./src/%.c
 	gcc -c $< -o $@ $(myDebugArgs) -I $(head_Path)
 
+
+mkdirfolder:
+	mkdir obj
 
 clean:
 	-rm -rf $(obj) math.out 
