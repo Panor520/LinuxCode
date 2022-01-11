@@ -6,4 +6,6 @@ make #get all executanle file
 ./write #write file
 ./mycp file1  dir/file1  #mycp.c copy and paste
 
-./tty  #nonblock IO demo
+./tty  #NONBLOCK IO Demo.
+
+./fcntl.c #modify file flags demo
