@@ -28,8 +28,9 @@ void IsDir(char * name)
 			continue;
 		}
 		
-		sprintf(path,"%s/%s",name,dt->d_name);	
-		if(strlen(path)>256){
+		sprintf(path,"%s/%s",name,dt->d_name);//拼接目录项	
+		
+		if(strlen(path)>256){//目录最长为256
 			perror("path length can't greater than 256\n");
 			exit(0);
 		}
