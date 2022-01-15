@@ -9,3 +9,6 @@ make #get all executanle file
 ./tty  #NONBLOCK IO Demo.
 
 ./fcntl.c #modify file flags demo
+
+./myls_R  #demo for function:  opendir readdir stat . print file name and size.
+./myls_R .. #Specify directory 

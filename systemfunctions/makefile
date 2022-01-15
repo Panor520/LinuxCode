@@ -3,11 +3,12 @@ src=$(wildcard *.c)
 
 target=$(patsubst %.c, %,$(src)) 
 
+myArgs=-g -Wall
 
 all:$(target)
 
 %:%.c
-	gcc $< -o $@
+	gcc $< -o $@ $(myArgs)
 
 clean:
 	rm -rf $(target)
