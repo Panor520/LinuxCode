@@ -16,7 +16,9 @@ int main(int argc,char * argv[])
 		exit(111);
 	}else if(ret > 0){
 		
-		int id= wait(&wstatus);
+		int id= waitpid(ret,&wstatus,0);//阻塞等待
+		//int id= waitpid(ret,&wstatus,WNOHANG);//非阻塞，会立即返回结果
+
 		if(id == -1){
 			perror("wait error\n");
 			exit(0);
