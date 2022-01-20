@@ -9,21 +9,22 @@ int main(int argc,char * argv[])
 {
 	int fifofd,n;
 
+	fifofd = open("./fifo.file",O_RDONLY);
 
-	if((fifofd=open("fifo.file",O_RDONLY)) == -1){//打开fifo文件
+	if(fifofd == -1){//打开fifo文件
 		perror("open fifo.file error\n");
 		exit(-1);
 	}
 
 	char str[1024];
+	n=0;
+	bzero(str,sizeof(str));
+	
 	while(1){//持续读取fifo文件中数据
-		if((n == read(fifofd,str,strlen(str))) == -1){
-			perror("read error \n");
-			exit(-1);
-		}
-	
+		n == read(fifofd,str,15);
+			
 		write(STDOUT_FILENO,str,n);//将读到的数据输出到标准输出
-	
+		sleep(3);	
 	}
 
 
