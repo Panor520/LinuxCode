@@ -67,4 +67,7 @@ printPSdata.c  利用open、dup2、execlp函数将ps aux命令结果写入文件
 
 
 pipe_practice1.c  
-	：多进程利用管道进行通讯示例：用代码实现当前文件夹下 ls -l | wc -l的功能。
+	：父子进程利用管道进行通讯示例：用代码实现当前文件夹下 ls -l | wc -l的功能。
+
+pipe_practice2.c  
+	：兄弟进程利用管道进行通讯示例：用代码实现当前文件夹下 ls -l | wc -l的功能。
