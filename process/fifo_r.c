@@ -9,7 +9,7 @@ int main(int argc,char * argv[])
 {
 	int fifofd,n;
 
-	fifofd = open("./fifo.file",O_RDONLY);
+	fifofd = open("fifo.file",O_RDONLY);
 
 	if(fifofd == -1){//打开fifo文件
 		perror("open fifo.file error\n");
@@ -17,14 +17,13 @@ int main(int argc,char * argv[])
 	}
 
 	char str[1024];
-	n=0;
-	bzero(str,sizeof(str));
-	
+	n = 0;
 	while(1){//持续读取fifo文件中数据
-		n == read(fifofd,str,15);
-			
+
+		n = read(fifofd,str,strlen(str));	
+
 		write(STDOUT_FILENO,str,n);//将读到的数据输出到标准输出
-		sleep(3);	
+	
 	}
 
 

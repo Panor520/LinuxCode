@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 int main(int argc,char * argv[])
 {
@@ -17,7 +18,7 @@ int main(int argc,char * argv[])
 		}
 	}
 
-	fifofd = open("./fifo.file",O_WRONLY);
+	fifofd = open("fifo.file",O_WRONLY);
 	if(fifofd == -1){//打开管道文件并清空文件
 		perror("open fifo.file error\n");
 	}
