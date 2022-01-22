@@ -8,6 +8,12 @@ demo主要包含：
 	exec函数族。
 	僵尸进程。
 	wait和waitpid解决僵尸进程。
+	进程间通讯：
+		管道demo：
+			含有pipe字符的文件.
+			含有fifo字符的文件.
+		创建映射区demo：
+			含有mmap字符的文件.
 	practice（练习）。
 
 
@@ -60,8 +66,14 @@ demo主要包含：
 	fifo_w.c 和 fifo_r.c  
 		：第二种管道fifo demo，w为读端，r为写端。利用创建的fifo.file管道文件
 
+	mmap.c
+		:创建映射区简单示例。 利用 cat mmaptxt查看映射区对应的磁盘文件内容
 
+	mmap_fork.c
+		：利用映射区实现父子进程间通讯。 利用 cat mmap_forktxt 查看映射区对应的磁盘文件内容
 
+	mmap_w.c 和 mmap_r.c 
+		：利用映射区实现不同进程间通讯. 两个进程打开同一个文件建立映射区。必须先执行./mmap_w 在执行./mmap_r 才能实现通讯
 
 practice:
 	进程相关的练习题demo。
