@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 	if(pj != 0)
 		err(pj);
 	
-	printf("i=%d , x=%d pj=%d\n",ret,x,pj);//i的结果是-1,代表子线程非正常死亡，被cancel就是非正常消亡:。
+	printf("i=%ld , x=%d pj=%d\n",ret,x,pj);//i的结果是-1,代表子线程非正常死亡，被cancel就是非正常消亡:。
 
 
 	pthread_exit(0);

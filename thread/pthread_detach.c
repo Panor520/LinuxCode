@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 void err(int errno,char * msg)
 {
@@ -42,10 +43,10 @@ int main(int argc,char * argv[])
 	if(pdd != 0)
 		err(pdd,"pthread_detach");
 
-	int pjd;
+	//int pjd;
 	//pjd = pthread_join(tid,NULL);//设置了pthread_detach的线程，不能再pthread_join，否则会报Invalid argument的错误。
-	if( pjd != 0)
-		err(pjd,"pthread_join");
+	//if( pjd != 0)
+		//err(pjd,"pthread_join");
 
 	pthread_exit(0);
 }
