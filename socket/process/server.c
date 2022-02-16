@@ -3,18 +3,22 @@
 
 void catch_child(int signo)
 {
+	/*
 	while(1)
 	{
-		if(waitpid(0,NULL,WNOHANG) < 0)
+		if(waitpid(0,NULL,WNOHANG) == -1)//没有线程回收就退出
 			break;
-	}
+	}*/
+	while(waitpid(0,NULL,WNOHANG)>0);
+
+	return ;
 }
 
 
 int main(int argc, char *argv[])
 {
 	if(argc != 3)
-		err("parameter error.\nexample:./server 10.219.10.193 10001\n");
+		err("parameter error.\nexample:./server 127.0.0.1 10001\n");
 
 	int lfd;
 
@@ -68,7 +72,8 @@ int main(int argc, char *argv[])
 				}
 
 				write(connfd, buf, n);
-				write(STDOUT_FILENO, buf, n);
+				printf("%s\n",buf);
+				//write(STDOUT_FILENO, buf, n);//这个打印会打印很多莫名其妙的数据
 			}
 			close(connfd);
 		}
@@ -92,9 +97,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	close(lfd);
 	
-	printf("close fd\n");
-
 	return 0;
 }
