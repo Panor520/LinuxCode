@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 	if(fd == -1)
 		err("socket error\n");
 
-	int connfd;
+	int conn;
 	struct sockaddr_in addr;
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(atoi(argv[2]));//端口号必须和服务器对应
@@ -32,8 +32,8 @@ int main(int argc, char *argv[])
 	inet_pton(AF_INET,argv[1],&addr.sin_addr.s_addr);
 
 
-	connfd = connect(fd,(struct sockaddr*)&addr,sizeof(addr));
-	if(connfd == -1)
+	conn = connect(fd,(struct sockaddr*)&addr,sizeof(addr));
+	if(conn == -1)
 		err("connect error\n");
 
 	//向socket写（发送）数据
@@ -56,7 +56,6 @@ int main(int argc, char *argv[])
 	
 	printf("read:%s\n",buf);
 
-	close(connfd);
 	close(fd);
 	printf("close.\n");
 
