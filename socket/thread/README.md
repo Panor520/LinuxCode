@@ -13,3 +13,6 @@ test command: 一个server 多个client
 	./client 127.0.0.1 10001
 	./client 127.0.0.1 10001
 	./client 127.0.0.1 10001
+
+查看线程运行：
+	ps -xH|grep ./server
