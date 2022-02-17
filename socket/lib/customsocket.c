@@ -178,3 +178,12 @@ ssize_t writen(int fd, const void *vptr, size_t n)
 	return n;
 }
 
+int pthread_Create(pthread_t *thread, const pthread_attr_t *attr,
+		                              void *(*start_routine) (void *), void *arg)
+{
+	int x = pthread_create(thread,attr,start_routine,arg);
+	if(x != 0)
+		err("pthread_create error\n");
+
+	return x;
+}

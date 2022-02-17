@@ -27,4 +27,10 @@ ssize_t readn(int fd, void *buf, size_t count);
 ssize_t readline(int fd, void *vptr, size_t maxlen);
 ssize_t writen(int fd, const void *vptr, size_t n);
 
+
+int pthread_Create(pthread_t *thread, const pthread_attr_t *attr,
+		                          void *(*start_routine) (void *), void *arg);
+
+
+
 #endif

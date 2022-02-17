@@ -52,7 +52,8 @@ int main(int argc, char *argv[])
 
 			char str_ip[50];
 			printf("Connected client.ip:%s,port:%d \n",
-					inet_ntop(AF_INET, &addr.sin_addr.s_addr, str_ip,sizeof(str_ip)), ntohs(addr.sin_port));
+					inet_ntop(AF_INET, &addr.sin_addr.s_addr, str_ip,sizeof(str_ip)), 
+					ntohs(addr.sin_port));
 	
 			char buf[1024];
 			int n,i;
