@@ -50,7 +50,10 @@ int main(int argc, char * argv[])
 
 	int lfd,cfd;
 	lfd = Socket(AF_INET,SOCK_STREAM,0);
-	
+
+	int opt;	
+	setsockopt(lfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
 	struct sockaddr_in addr, addr_c;
 	socklen_t addr_c_len;
 	
