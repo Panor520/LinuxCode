@@ -3,11 +3,15 @@
 int main(int argc, char *argv[])
 {
 	if(argc!=3)
-		err("parameters error.\nexample:./server 127.0.0.1 10001\n");
+		err("parameters error.\nexample:./server_better 127.0.0.1 10001\n");
 
-	int lfd,cfd;
+	int lfd, cfd, rfd;
 	char ip_c[16];//为啥是16，百度吧
 	char buf[1024];
+	int client[FD_SETSIZE];//FD_SETSIZE 系统带的宏 值为1024
+	int maxi;
+	int sret, maxfd, i, j, nread;
+	
 	struct sockaddr_in addr_c,addr_s;
 	socklen_t len_addr_c;
 	bzero(&addr_c,sizeof(addr_c));
@@ -28,7 +32,10 @@ int main(int argc, char *argv[])
 	FD_ZERO(&rset);
 	FD_ZERO(&allset);
 
-	int sret, maxfd, i, j, nread;
+	maxi = -1;//用来记录 client数组存在的最大值
+	for(i = 0; i < FD_SETSIZE; i++)//将数组初始化
+		client[i] = -1;
+
 	maxfd = lfd;//设置最大为新创建的文件描述符
 	FD_SET(lfd, &allset);//先将lfd，加入监听中
 	
@@ -51,39 +58,67 @@ int main(int argc, char *argv[])
 						,inet_ntop(AF_INET, &addr_c.sin_addr.s_addr, ip_c,sizeof(ip_c))
 						,ntohs(addr_c.sin_port));
 				
+				for(i = 0; i < FD_SETSIZE; i++)//将新增的连接描述符存放到提升遍历效率的数组中***********
+				{
+					if(client[i] == -1)
+					{
+						client[i] = cfd;
+						break;
+					}
+				}
+
+					
+				if(i == FD_SETSIZE)
+				{
+					fputs("client[] too many client\n",stderr);
+					exit(1);
+				}
+
+				if(i > maxi)//保证 maxi 总是client数组中最大的下标
+					maxi = i;
+
 				FD_SET(cfd, &allset);//将新客户生成的cfd加入allset中
 
 				if(maxfd < cfd)//让maxfd始终是最大的文件描述符
 					maxfd = cfd;
-				
+								
 				if(1 == sret)//如果返回的 sret=1且只有lfd，那就不用在执行下面处理客户端fd的代码了
 					continue;
+				
 			}
 			
 
 			
-			for(i = lfd+1; i <= maxfd; i++)//处理客户端连接的fd（客户端请求）
+			for(i = 0; i <= maxi; i++)//处理客户端连接的fd（客户端请求）
 			{
-				if(FD_ISSET(i, &rset))//遍历已存在的fd是否存在于select传出的rset集合中
+				rfd = client[i];
+				if(rfd == -1)//如果拿到的不是可用fd那就直接跳出本次循环
+					continue;
+
+				if(FD_ISSET(rfd, &rset))//遍历已存在的fd是否存在于select传出的rset集合中
 				{
 					//bzero(buf, sizeof(buf));
-					nread = read(i, buf, sizeof(buf));
+					nread = read(rfd, buf, sizeof(buf));
 					if(nread == 0)//表示对端关闭
 					{
-						close(i);
-						FD_CLR(i,&allset);//将关闭的cfd从要监听的集合中去除
+						close(rfd);
+						FD_CLR(rfd,&allset);//将关闭的cfd从要监听的集合中去除
+						client[i] = -1;//将关闭的cfd从数组中去除
 					}
 					else if(nread > 0)
 					{
 						for(j = 0; j < nread; j++)
 							buf[j] = toupper(buf[j]);
 
-						write(i, buf, nread);//向对端写数据
+						write(rfd, buf, nread);//向对端写数据
 						printf("write to %s %d:%s\n"
 								,ip_c
 								,ntohs(addr_c.sin_port)
 								,buf);
 					}
+
+					if(1 == sret)//如果传出的rset值为1，且上面逻辑已处理过了，就跳出for循环
+						break;
 				}
 			}
 
