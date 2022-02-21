@@ -3,7 +3,7 @@
 
 void err(char * msg)
 {
-	perror(msg);
+	printf("%s",msg);
 	exit(-1);
 }
 

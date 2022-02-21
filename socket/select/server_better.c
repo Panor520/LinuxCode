@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 
 				if(FD_ISSET(rfd, &rset))//遍历已存在的fd是否存在于select传出的rset集合中
 				{
-					//bzero(buf, sizeof(buf));
+					bzero(buf, sizeof(buf));
 					nread = read(rfd, buf, sizeof(buf));
 					if(nread == 0)//表示对端关闭
 					{
