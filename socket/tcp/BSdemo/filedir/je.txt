@@ -1,0 +1,38 @@
+DECLARE @BegDate@ DATETIME
+								DECLARE @EndDate@ DATETIME
+								SET @BegDate@='20220201'
+								SET @EndDate@='20220301'
+
+SELECT
+				Ta.DealSchedLineUID,
+				Ta.DealUID,
+				SUM(CASE WHEN Ta.CashFlowTypeUID IN (20006) THEN Ta.JEamount ELSE 0 END) FreightFee,
+				SUM(CASE WHEN Ta.CashFlowTypeUID IN (31012) THEN Ta.JEamount ELSE 0 END) InsuranceFee,
+				SUM(CASE WHEN Ta.CashFlowTypeUID IN (31013) THEN Ta.JEamount ELSE 0 END) InspectionFee,
+				SUM(CASE WHEN Ta.CashFlowTypeUID NOT IN (31002,31012,31013,20000,20013,31005,20014,31006,20006) THEN Ta.JEamount  ELSE 0 END) OtherFeeAmount,
+				ABS(SUM(CASE WHEN   Ta.CashFlowTypeUID IN (20000,20013,31005,20014,31006)  THEN Ta.JEamount  ELSE CASE WHEN  (Ta.CashFlowTypeUID IN (20000,20013,31005,20014,31006)  ) THEN Ta.JEamount ELSE 0 END END)) OilAmount,					
+				SUM(ISNULL(Ta.JEamount,0)) TotalAmount
+				FROM
+					( SELECT DISTINCT
+										jes.DealUID,je.DebitCreditFlag,PostAmount --,GLEntryKey
+										,jes.DealSchedLineUID
+										,CASE WHEN DebitCreditFlag='D' THEN 1 ELSE -1 END * ABS(SUM(jed.DetailAmount)) AS JEamount
+									,jes.CashFlowTypeUID
+									FROM JournalEntries je
+									LEFT JOIN JournalEntryDetails jed ON je.JournalEntryUID=jed.JournalEntryUID
+									LEFT JOIN JournalEntrySources jes ON jed.JournalEntrySourceUID=jes.JournalEntrySourceUID
+									LEFT JOIN GLAccounts gts ON je.AccountUID=gts.AccountUID 
+									WHERE --jes.DealUID=1184430 and
+											jes.DealerUID=31503 
+											--and  je.GLReverseEntryKey is null 
+											and  (je.GLReverseEntryKey is null  or je.ReversePostDate>@EndDate@)
+											AND GLEntryKey IS NOT NULL
+											AND (gts.Description LIKE N'%应付%内%' OR gts.Description LIKE N'%应收%内%' --and je.EntryDescription like '%Estima%'
+												)
+											AND PostDate --<
+												BETWEEN dateadd(month,-8,@BegDate@) AND @EndDate@
+												--dateadd(month, datediff(month, 0, dateadd(month, 1, dateadd(dd,-10,getdate()))), -1)
+									GROUP BY jes.DealUID,je.DebitCreditFlag,PostAmount,jes.DealSchedLineUID,jes.CashFlowTypeUID
+									)Ta
+									where DealUID=1269789
+				GROUP BY Ta.DealSchedLineUID,Ta.DealUID--,Ta.JEamount此处不去掉会产生重复
