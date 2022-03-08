@@ -11,9 +11,12 @@
 #include <sys/epoll.h>
 #include <pthread.h>
 #include <sys/stat.h>
- #include <fcntl.h>
+#include <fcntl.h>
+#include <dirent.h>
 
-#define MAXSIZE 2048
+#define MAXSIZE 1024
+
+
 
 //获取一行 \r\n结尾的数据。   http头每行以/r/n结尾
 int get_line(int cfd, char *buf, int size)
@@ -61,6 +64,101 @@ int get_line(int cfd, char *buf, int size)
     return i;
 }
 
+const char * get_file_type(const char *name)
+{
+	char * dot;
+	dot = strrchr(name, '.');		//自右向左查找'.'字符， 如不存在返回 NULL
+	
+	if(dot == NULL)
+		return "text/plain; charset=utf-8";
+	if(strcmp(dot, ".html") == 0 || strcmp(dot, ".htm") == 0)
+		return "text/html; charset=utf-8";
+	if(strcmp(dot, ".jpg") == 0 || strcmp(dot, ".jpeg") == 0)
+		return "image/jpeg";
+	if(strcmp(dot, ".gif") == 0)
+		return "image/gif";
+	if(strcmp(dot, ".png") == 0)
+		return "image/png";
+	if(strcmp(dot, ".css") == 0)
+		return "application/x-csi";
+	if(strcmp(dot, ".avi") == 0)
+		return "audio/basic";
+	if(strcmp(dot, ".mp3") == 0)
+		return "audio/mp3";		
+	if(strcmp(dot, ".mp4") == 0)
+		return "video/mpeg4";	
+	
+	return "text/plain; charset=utf-8";
+}
+
+void send_error(int fd, int status, char *title, char *text)
+{
+	char buf[4096] = {0};
+	
+	sprintf(buf, "HTTP1.1 %d %s\r\nContent-Type:text/html\r\nContent-Length:%dConnection:close\r\n\r\n", status, title, -1);
+	sprintf(buf+strlen(buf), "<html><head><title>%d %s</title></head>\n",status, title );
+	sprintf(buf+strlen(buf), "<body> <h4>%d %s</h4>\n",status, title );
+	sprintf(buf+strlen(buf), "%s\n <hr>\n</body>\n</html>\n", text );
+	
+	
+	send(fd, buf, strlen(buf), 0);
+}
+
+//16进制 转 10进制
+int hexit(char c)
+{
+	if(c >= '0' && c <= '9')
+		return c - '0';
+		
+	if(c >= 'a' && c <= 'f')
+		return c - 'a' + 10;
+	
+	if(c >= 'A' && c <= 'F')
+		return c - 'A' + 10;
+	
+	return 0;
+}
+
+void encode_str(char *to, int tosize, const char *from)
+{
+	int tolen;
+	
+	for (tolen = 0; *from != '\0' && tolen+4 < tosize; ++from)
+	{
+		if(isalnum(*from) || strchr("/_.-~", *from) != (char*)0)
+		{
+			*to = *from;
+			++to;
+			++tolen;
+		}
+		else 
+		{
+			sprintf(to, "%%%02x", (int) *from & 0xff);
+			to += 3;
+			from += 3;
+		}
+	}
+	*to = '\0';
+}
+
+void decode_str(char *to, char *from)
+{
+	for (; *from != '\0'; ++from, ++to)
+	{
+		if(from[0] == '%' && isxdigit(from[1]) && isxdigit(from[2]))
+		{
+			*to = hexit(from[1]) * 16 + hexit(from[2]);
+			from += 2;
+		}
+		else 
+		{
+			*to = *from;
+		}
+	}
+	
+	*to = '\0';
+}
+
 void do_accept(int lfd, int epfd)
 {
 	char ip[16];
@@ -97,32 +195,189 @@ void do_accept(int lfd, int epfd)
 }
 
 
-void disconnect(int cfd, int epfd)
+void disconnect(int fd, int epfd)
 {
-	int ret = epoll_ctl(epfd, EPOLL_CTL_DEL, cfd, NULL);
+	int ret = epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL);
 	if(ret == -1)
 	{
 		perror("epoll_ctl_del error\n");
 		exit(-1);
 	}
 	
-	close(cfd);
+	close(fd);
 }
 
-void http_request(const char * file)
+//拼接 http 响应头
+void send_respond(int fd, int no, char *disp,const char *type, int len)
 {
-	struct stat sbuf;
+	char buf[1024];
+	memset(buf, 0, sizeof(buf));
 	
+	sprintf(buf, "HTTP/1.1 %d %s\r\nContent-Type:%s\r\nContent-Length:%d\r\nConnection:close\r\n\r\n", no, disp, type, len);//Content-Length为-1 就是会自动计算,会导致传输一直在进行，直到断开连接。设置具体的值，当传够具体的值后连接连接就自动关了
+	
+	send(fd, buf, strlen(buf), 0);
+	
+}
+
+void send_file(int fd, const char * file)
+{
+	int n, ret;
+	char buf[1024];
+	
+	int ffd = open(file, O_RDONLY);
+	if(fd == -1)
+	{
+		send_error(fd, 404, "Not Found", "No such file or direntry");
+		//perror("open error");
+		//exit(-1);
+	}
+	
+	while(1)
+	{
+		n = read(ffd, buf, sizeof(buf));
+		if(n <= 0)							//读到文件末尾
+			break;
+		
+		ret = send(fd, buf, n, 0); 
+		///*
+		if(ret == -1)
+		{
+			if(errno == EAGAIN)
+			{
+				printf("-----EAGAIN-----"); 
+				continue;
+			}
+			else if(errno == EINTR)
+			{
+				printf("-----EINTR-----");
+				continue; 
+			}
+			else 
+			{
+				perror("send error\n");
+				exit(-1);
+			}	
+		}
+		//*/
+		
+	}
+	
+	close(ffd);
+}
+
+void send_dir(int fd, const char *dirname)
+{
+	int i, ret;
+	
+	char buf[4096] = {0};
+	
+	sprintf(buf, "<html><head><title>目录名：%s</title></head>", dirname);
+	sprintf(buf+strlen(buf), "<body><h1>当前目录：%s</h1></body><table>", dirname);
+	
+	char enstr[1024] = {0};
+	char path[1024] = {0};
+	
+	struct dirent **ptr;	//目录项二级指针
+	int num = scandir(dirname, &ptr, NULL, alphasort);
+	
+	for (i = 0; i<num; i++)
+	{
+		char *name = ptr[i]->d_name;
+		
+		//拼接文件的完整路径
+		sprintf(path, "%s%s", dirname, name);
+		printf("path = %s ========\n",path);
+		
+		struct stat st;
+		stat(path, &st);
+		
+		//编码生成 unicode 
+		encode_str(enstr, sizeof(enstr), name);
+		
+		if(S_ISREG(st.st_mode))
+		{
+			sprintf(buf+strlen(buf)
+					,"<tr><td><a href=\"%s\">%s </a></td><td>%ld</td></tr>"
+					,enstr, name, (long)st.st_size);	
+		}
+		else if(S_ISDIR(st.st_mode))
+		{
+			sprintf(buf+strlen(buf)
+					,"<tr><td><a href=\"%s\">%s/</a></td><td>%ld</td></tr>"
+					,enstr, name, (long)st.st_size);
+		}
+		
+		ret = send(fd, buf, strlen(buf), 0);
+		if(ret == -1)
+		{
+			if(errno == EAGAIN)
+			{
+				printf("-----EAGAIN-----"); 
+				continue;
+			}
+			else if(errno == EINTR)
+			{
+				printf("-----EINTR-----");
+				continue; 
+			}
+			else 
+			{
+				perror("send error\n");
+				exit(-1);
+			}	
+		}
+		
+		memset(buf, 0, sizeof(buf));							//send完之后就可以清空buf
+	}
+	
+	sprintf(buf+strlen(buf), "</table></body></html>");
+	send(fd, buf, strlen(buf), 0);
+	
+	printf("dir message send OK!");
+}
+
+//void http_request(int fd, const char * file)
+void http_request(int fd, const char * request)
+{
+	
+	
+	char method[16], path[256], protocol[16];
+		
+	sscanf(request, "%[^ ] %[^ ] %[^ ]", method, path, protocol);
+		
+	printf("method=%s path=%s protocol=%s \n", method, path, protocol);
+	
+	decode_str(path,path);
+	
+	char *file = path + 1;	//去掉path中的/ 获取访问文件名
+	if(strcmp(path,"/") == 0)
+	{
+		file = "./";		//资源目录当前位置
+	}
+	
+	struct stat sbuf;
 	int ret = stat(file, &sbuf);
 	if(ret != 0)
 	{
-		perror("stat error \n");
-		exit(-1);		
+		send_error(fd, 404, "Not Found", "No such file or direntry");
+		//perror("stat error \n");
+		//exit(-1);		
 	}
 	
 	if(S_ISREG(sbuf.st_mode))
 	{
-		printf("it's file!\n");		
+		//发送 http 响应头	
+		//send_respond(fd, 200, "OK", "Content-Type: text/plain;  charset=utf-8", sbuf.st_size);
+		send_respond(fd, 200, "OK", get_file_type(file), sbuf.st_size);
+		
+		//发送 文件内容
+		send_file(fd, file);
+	}
+	else if (S_ISDIR(sbuf.st_mode))
+	{
+		send_respond(fd, 200, "OK", get_file_type(".html"), -1);
+		
+		send_dir(fd, file);
 	}
 }
 
@@ -138,11 +393,13 @@ void do_read(int fd, int epfd)
 	}
 	else 
 	{
+		/*
 		char method[16], path[256], protocol[16];
 		
 		sscanf(line, "%[^ ] %[^ ] %[^ ]", method, path, protocol);
 		
 		printf("method=%s path=%s protocol=%s \n", method, path, protocol);
+		*/
 		
 		while(1)
 		{
@@ -158,10 +415,16 @@ void do_read(int fd, int epfd)
 			}
 		}
 		
-		if(strncasecmp(method, "GET", 3) == 0)
+		//判断get请求
+		if(strncasecmp(line, "GET", 3) == 0)
 		{
-			char *file = path + 1;
-			http_request(file);
+			//char *file = path + 1;
+			
+			//处理http请求
+			http_request(fd, line);
+			
+			//关闭套接字， cfd 从epoll上del。 http响应完应断开连接。
+			disconnect(fd, epfd);
 		}
 	}
 	
@@ -181,7 +444,7 @@ int init_listen_fd(char * ip_s ,int port, int epfd)
 	memset(&srv_addr, 0, sizeof(srv_addr));
 	
 	srv_addr.sin_family = AF_INET;
-	srv_addr.sin_port = port;
+	srv_addr.sin_port = htons(port);
 	//srv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	inet_pton(AF_INET, ip_s, &srv_addr.sin_addr);
 	
@@ -242,11 +505,12 @@ void epoll_run(char * ip_s , int port)
     		exit(-1);		
     	}
     	
+    	
     	for (i=0; i<ret; i++)
     	{
     		struct epoll_event * pev = &all_events[i];
     		
-    		if(!(pev->data.fd & EPOLLIN))		//只处理读事件
+    		if( !(pev->events & EPOLLIN))		//只处理读事件
     		{
     			continue;
     		}
@@ -289,6 +553,3 @@ int main(int argc, char * argv[])
     
     return 0;
 }
-
-
-
