@@ -14,8 +14,8 @@
 #include <fcntl.h>
 #include <dirent.h>
 
-#define MAXSIZE 1024
 
+#define MAXSIZE 1024
 
 //获取一行 \r\n结尾的数据。  http头每行以/r/n结尾
 // 返回读取到的字符个数。-1 表示recv 出错
@@ -217,8 +217,8 @@ void send_respond(int cfd, int no, char *disp,const char *type, int len)
 {
 	char buf[1024];
 	memset(buf, 0, sizeof(buf));
-	
-	sprintf(buf, "HTTP/1.1 %d %s\r\nContent-Type:%s\r\nContent-Length:%d\r\nConnection:close\r\n\r\n", no, disp, type, len);//Content-Length为-1 就是会自动计算,会导致传输一直在进行，直到断开连接。设置具体的值，当传够具体的值后连接连接就自动关了
+	//Connection:close\r\n
+	sprintf(buf, "HTTP/1.1 %d %s\r\nContent-Type:%s\r\nContent-Length:%d\r\n\r\n", no, disp, type, len);//Content-Length为-1 就是会自动计算,会导致传输一直在进行，直到断开连接。设置具体的值，当传够具体的值后连接连接就自动关了
 	
 	int ret = send(cfd, buf, strlen(buf), 0);
 	if(ret == -1)
@@ -249,17 +249,17 @@ void send_file(int cfd, const char * file)
 		n = read(ffd, buf, sizeof(buf));				//读取文件内容
 		if(n == 0)										//读到文件结尾就跳出
 			break;
-		else 
+		else if(n == -1) 
 		{
-			if(errno == EAGAIN)							//不是真的发送出错，非阻塞传输，缓冲区满等产生时，应接着尝试发送
+			if(errno == EAGAIN || errno == EWOULDBLOCK)							//不是真的发送出错，非阻塞传输，缓冲区满等产生时，应接着尝试发送
 			{
 				printf("-----read EAGAIN-----\n"); 		//读大文件时会多次进到这里
-				//continue;
+				continue;
 			}
 			else if(errno == EINTR)
 			{
 				printf("-----read EINTR-----\n");				//不是真的发送出错，发送中收到信号出现中断，应接着发送
-				//continue; 
+				continue; 
 			}
 			else 
 			{
@@ -272,7 +272,7 @@ void send_file(int cfd, const char * file)
 		
 		if(ret == -1)
 		{
-			if(errno == EAGAIN)							//不是真的发送出错，非阻塞传输，缓冲区满等产生时，应接着尝试发送
+			if(errno == EAGAIN || errno == EWOULDBLOCK)							//不是真的发送出错，非阻塞传输，缓冲区满等产生时，应接着尝试发送
 			{
 				printf("-----send_file EAGAIN-----\n"); 			//发送大文件时会多次进到这里
 				continue;
@@ -344,14 +344,14 @@ void send_dir(int cfd, const char *dirname)
 		ret = send(cfd, buf, strlen(buf), 0);			//发送拼接的内容返回给请求者
 		if(ret == -1)
 		{
-			if(errno == EAGAIN)							//非阻塞传输，缓冲区满等产生时，应接着尝试发送
+			if(errno == EAGAIN || errno == EWOULDBLOCK)							//非阻塞传输，缓冲区满等产生时，应接着尝试发送
 			{
-				printf("-----EAGAIN-----\n"); 	
+				//printf("-----EAGAIN-----\n"); 	
 				continue;
 			}
 			else if(errno == EINTR)						//发送中收到信号出现中断，应接着发送
 			{
-				printf("-----EINTR-----\n");
+				//printf("-----EINTR-----\n");
 				continue; 
 			}
 			else 
@@ -432,9 +432,14 @@ void do_read(int cfd, int epfd)
 			len = get_line(cfd, buf, sizeof(buf));
 			if(len == -1)
 			{
-				printf("get_line error.\n");
+				printf("get_line error.\n");			
 				break;
 			}
+			/*else if(len == 0)							//读完 请求信息就跳出
+			{
+				printf("get_line break.\n");	
+				break;
+			}*/
 			else
 			{
 				printf("buf:%s",buf);
@@ -553,18 +558,34 @@ void epoll_run(char * ip_s , int port)
     }
 }
 
+
+void handle_pipe(int sig)
+{
+//do nothing
+}
+int ignore_signal()
+{
+    struct sigaction sa;
+    sa.sa_handler = handle_pipe;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGPIPE,&sa,NULL);			//忽略掉SIGPIPE的信号，避免停掉服务
+//do something
+}
+
 int main(int argc, char * argv[])
 {
-    if(argc < 4)                        //指定参数运行程序
+    if(argc < 4)                        	//指定参数运行程序
     {
     	printf("./a.out ip port path\n");
     	exit(-1);
     }
-        
-        
-    int port = atoi(argv[2]);           //获取端口号
     
-    int ret = chdir(argv[3]);           //改变进程工作目录
+    ignore_signal();    					//屏蔽内核给的SIGPIPE信号 ,browser端和server端建立连接后就关闭了自己的写端，但读端开着。此时server send数据时内核会发出SIGPIPE的信号 并停掉服务进程，应设置屏蔽该SIGPIPE信号
+        
+    int port = atoi(argv[2]);           	//获取端口号
+    
+    int ret = chdir(argv[3]);           	//改变进程工作目录
     if(ret != 0)
     {
         perror("chdir error\n");
@@ -574,7 +595,7 @@ int main(int argc, char * argv[])
     char ip_s[20];
     strcpy(ip_s, argv[1]);
     
-    epoll_run(ip_s, port);                    //启动 epoll 监听
+    epoll_run(ip_s, port);                  //启动 epoll 监听
     
     return 0;
 }
