@@ -17,8 +17,8 @@
 #define MAXSIZE 1024
 
 
-
-//获取一行 \r\n结尾的数据。   http头每行以/r/n结尾
+//获取一行 \r\n结尾的数据。  http头每行以/r/n结尾
+// 返回读取到的字符个数。-1 表示recv 出错
 int get_line(int cfd, char *buf, int size)
 {
     int i = 0;
@@ -27,43 +27,44 @@ int get_line(int cfd, char *buf, int size)
     
     while(1)
     {
-       if((i < size-1) && (c != '\n'))  //最后一个为\n 时跳出读取循环， i < size-1 是因为 i总是会多加 1。
+       if((i < size-1) && (c != '\n'))  				//最后一个为\n 时跳出读取循环， i < size-1 是因为 i总是会多加 1。
        {
-            n = recv(cfd, &c, 1, 0);    //每次读一个字符,flags设置为0，此时recv()函数读取tcp 缓冲区中的数据到buf中，并从tcp 缓冲区中移除已读取的数据
+            n = recv(cfd, &c, 1, 0);    				//每次读一个字符,flags设置为0，此时recv()函数读取tcp 缓冲区中的数据到buf中，并从tcp 缓冲区中移除已读取的数据
             if(n > 0)
             {
-                if(c == '\r')   //单独读到\r并不是行结尾
+                if(c == '\r')   						//单独读到\r并不是行结尾
                 {
-                    n = recv(cfd, &c, 1, MSG_PEEK);    //预读一个字符是否为\n  //flags设置为MSG_PEEK，仅仅是把tcp 缓冲区中的数据读取到buf中，没有把已读取的数据从tcp 缓冲区中移除，如果再次调用recv()函数仍然可以读到刚才读到的数据。
+                    n = recv(cfd, &c, 1, MSG_PEEK);    	//预读一个字符是否为\n  //flags设置为MSG_PEEK，仅仅是把tcp 缓冲区中的数据读取到buf中，没有把已读取的数据从tcp 缓冲区中移除，如果再次调用recv()函数仍然可以读到刚才读到的数据。
                     if((n > 0) && (c == '\n')) 
                     {
-                        recv(cfd, &c, 1, 0);    //读到\n 再次循环就会跳出读取
+                        recv(cfd, &c, 1, 0);    		//读到\n 再次循环就会跳出读取，从缓冲区中读出\n字符
                     }
                     else
                     {
-                        c = '\n';
+                        c = '\n';						//如果读到最后没读到\n就给最后的字符附上 \n
                     }
                 }
-                buf[i] = c;
-                i++;
+                buf[i] = c;								//将读取到的字符存储到接收的内存区
+                i++;									//i总是+1，用来指定接收的内存区buf的位置
             }
             else
             {
-                c = '\n';
+                c = '\n';								//如果读到最后没读到\n就给最后的字符附上 \n
             }
         }
-        else 
+        else 											//不满足条件就退出
             break;
     }
     
-    buf[i] = '\0';
+    buf[i] = '\0';										//始终给buf添加上结束标记
     
-    if(-1 == n) //recv发生错误时 n=-1 ,
+    if(-1 == n) 										//recv发生错误时 n=-1 ,此时还应返回读取到的字符个数
         i = n;
     
-    return i;
+    return i;											//返回读取到的字符个数，发生错误时返回 -1
 }
 
+//获取文件类型，并返回相应的Content-Type类型
 const char * get_file_type(const char *name)
 {
 	char * dot;
@@ -74,23 +75,24 @@ const char * get_file_type(const char *name)
 	if(strcmp(dot, ".html") == 0 || strcmp(dot, ".htm") == 0)
 		return "text/html; charset=utf-8";
 	if(strcmp(dot, ".jpg") == 0 || strcmp(dot, ".jpeg") == 0)
-		return "image/jpeg";
+		return "image/jpeg; charset=utf-8";
 	if(strcmp(dot, ".gif") == 0)
-		return "image/gif";
+		return "image/gif; charset=utf-8";
 	if(strcmp(dot, ".png") == 0)
-		return "image/png";
+		return "image/png; charset=utf-8";
 	if(strcmp(dot, ".css") == 0)
-		return "application/x-csi";
+		return "application/x-csi; charset=utf-8";
 	if(strcmp(dot, ".avi") == 0)
-		return "audio/basic";
+		return "audio/basic; charset=utf-8";
 	if(strcmp(dot, ".mp3") == 0)
-		return "audio/mp3";		
+		return "audio/mp3; charset=utf-8";		
 	if(strcmp(dot, ".mp4") == 0)
-		return "video/mpeg4";	
+		return "video/mpeg4; charset=utf-8";	
 	
 	return "text/plain; charset=utf-8";
 }
 
+//发送错误的response的html内容给请求者
 void send_error(int fd, int status, char *title, char *text)
 {
 	char buf[4096] = {0};
@@ -119,6 +121,7 @@ int hexit(char c)
 	return 0;
 }
 
+//加码
 void encode_str(char *to, int tosize, const char *from)
 {
 	int tolen;
@@ -141,6 +144,7 @@ void encode_str(char *to, int tosize, const char *from)
 	*to = '\0';
 }
 
+//解码
 void decode_str(char *to, char *from)
 {
 	for (; *from != '\0'; ++from, ++to)
@@ -159,6 +163,7 @@ void decode_str(char *to, char *from)
 	*to = '\0';
 }
 
+//给browser的请求建立通信
 void do_accept(int lfd, int epfd)
 {
 	char ip[16];
@@ -194,237 +199,257 @@ void do_accept(int lfd, int epfd)
 	
 }
 
-
-void disconnect(int fd, int epfd)
+//关闭browser的连接
+void disconnect(int cfd, int epfd)
 {
-	int ret = epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL);
+	int ret = epoll_ctl(epfd, EPOLL_CTL_DEL, cfd, NULL);
 	if(ret == -1)
 	{
 		perror("epoll_ctl_del error\n");
 		exit(-1);
 	}
 	
-	close(fd);
+	close(cfd);
 }
 
 //拼接 http 响应头
-void send_respond(int fd, int no, char *disp,const char *type, int len)
+void send_respond(int cfd, int no, char *disp,const char *type, int len)
 {
 	char buf[1024];
 	memset(buf, 0, sizeof(buf));
 	
 	sprintf(buf, "HTTP/1.1 %d %s\r\nContent-Type:%s\r\nContent-Length:%d\r\nConnection:close\r\n\r\n", no, disp, type, len);//Content-Length为-1 就是会自动计算,会导致传输一直在进行，直到断开连接。设置具体的值，当传够具体的值后连接连接就自动关了
 	
-	send(fd, buf, strlen(buf), 0);
-	
+	int ret = send(cfd, buf, strlen(buf), 0);
+	if(ret == -1)
+	{
+		printf("send_response error.\n");
+	}
 }
 
-void send_file(int fd, const char * file)
+//发送http response给browser的请求
+//传入通信fd，要获取的文件名
+void send_file(int cfd, const char * file)				
 {
 	int n, ret;
-	char buf[1024];
+	char buf[1024];										//发送response的缓冲区
 	
-	int ffd = open(file, O_RDONLY);
-	if(fd == -1)
+	int ffd = open(file, O_RDONLY);						//打开要读的文件
+	if(ffd == -1)
 	{
-		send_error(fd, 404, "Not Found", "No such file or direntry");
+		perror("open error");
+		send_error(cfd, 404, "Not Found", "No such file or direntry");	//如果打开文件失败，那就发送 打开失败response信息
 		//perror("open error");
 		//exit(-1);
 	}
 	
-	while(1)
+	while(1)											//循环读取打开文件的数据并发送 response
 	{
-		n = read(ffd, buf, sizeof(buf));
-		if(n <= 0)							//读到文件末尾
+		memset(buf, 0, sizeof(buf));
+		n = read(ffd, buf, sizeof(buf));				//读取文件内容
+		if(n == 0)										//读到文件结尾就跳出
 			break;
+		else 
+		{
+			if(errno == EAGAIN)							//不是真的发送出错，非阻塞传输，缓冲区满等产生时，应接着尝试发送
+			{
+				printf("-----read EAGAIN-----\n"); 		//读大文件时会多次进到这里
+				//continue;
+			}
+			else if(errno == EINTR)
+			{
+				printf("-----read EINTR-----\n");				//不是真的发送出错，发送中收到信号出现中断，应接着发送
+				//continue; 
+			}
+			else 
+			{
+				printf("-----read error-----\n");
+				break;
+			}
+		}
 		
-		ret = send(fd, buf, n, 0); 
-		///*
+		ret = send(cfd, buf, n, 0); 					//发送文件内容到通信 fd 
+		
 		if(ret == -1)
 		{
-			if(errno == EAGAIN)
+			if(errno == EAGAIN)							//不是真的发送出错，非阻塞传输，缓冲区满等产生时，应接着尝试发送
 			{
-				printf("-----EAGAIN-----"); 
+				printf("-----send_file EAGAIN-----\n"); 			//发送大文件时会多次进到这里
 				continue;
 			}
 			else if(errno == EINTR)
 			{
-				printf("-----EINTR-----");
+				printf("-----send_file EINTR-----\n");				//不是真的发送出错，发送中收到信号出现中断，应接着发送
 				continue; 
 			}
 			else 
 			{
-				perror("send error\n");
-				exit(-1);
+				printf("send error\n");
+				//exit(-1);
+				send_error(cfd, 500, "Internal Server Error", "Internal Server Error");	//处理真正的异常发送问题，response 回发出错
+				break;
 			}	
 		}
-		//*/
+		
 		
 	}
 	
-	close(ffd);
+	close(ffd);											//文件发送完毕，关闭打开的文件fd
 }
 
-void send_dir(int fd, const char *dirname)
+//发送http response给browser的请求
+//传入通信fd，及目录名
+void send_dir(int cfd, const char *dirname)				
 {
 	int i, ret;
 	
-	char buf[4096] = {0};
-	
+	char buf[4096] = {0};								//开辟用来发送 response的内存
+		//<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">
 	sprintf(buf, "<html><head><title>目录名：%s</title></head>", dirname);
 	sprintf(buf+strlen(buf), "<body><h1>当前目录：%s</h1></body><table>", dirname);
 	
 	char enstr[1024] = {0};
 	char path[1024] = {0};
 	
-	struct dirent **ptr;	//目录项二级指针
-	int num = scandir(dirname, &ptr, NULL, alphasort);
+	struct dirent **ptr;								//目录项二级指针
+	int num = scandir(dirname, &ptr, NULL, alphasort);	//读取目录文件，返回值为目录项
 	
-	for (i = 0; i<num; i++)
+	for (i = 0; i<num; i++)								//循环目录项
 	{
-		char *name = ptr[i]->d_name;
+		char *name = ptr[i]->d_name;					//取出目录项的名字
 		
-		//拼接文件的完整路径
-		sprintf(path, "%s%s", dirname, name);
+		sprintf(path, "%s%s", dirname, name);			//拼接文件的完整路径
 		printf("path = %s ========\n",path);
 		
 		struct stat st;
-		stat(path, &st);
+		stat(path, &st);								//获取文件名
 		
-		//编码生成 unicode 
-		encode_str(enstr, sizeof(enstr), name);
 		
-		if(S_ISREG(st.st_mode))
+		//encode_str(enstr, sizeof(enstr), name);			//编码生成 unicode 
+		strcpy(enstr,name);
+		
+		if(S_ISREG(st.st_mode))							//普通文件拼接返回的body中的 response内容
 		{
 			sprintf(buf+strlen(buf)
 					,"<tr><td><a href=\"%s\">%s </a></td><td>%ld</td></tr>"
 					,enstr, name, (long)st.st_size);	
 		}
-		else if(S_ISDIR(st.st_mode))
+		else if(S_ISDIR(st.st_mode))					//目录文件拼接返回的body中的 response内容
 		{
 			sprintf(buf+strlen(buf)
 					,"<tr><td><a href=\"%s\">%s/</a></td><td>%ld</td></tr>"
 					,enstr, name, (long)st.st_size);
 		}
 		
-		ret = send(fd, buf, strlen(buf), 0);
+		ret = send(cfd, buf, strlen(buf), 0);			//发送拼接的内容返回给请求者
 		if(ret == -1)
 		{
-			if(errno == EAGAIN)
+			if(errno == EAGAIN)							//非阻塞传输，缓冲区满等产生时，应接着尝试发送
 			{
-				printf("-----EAGAIN-----"); 
+				printf("-----EAGAIN-----\n"); 	
 				continue;
 			}
-			else if(errno == EINTR)
+			else if(errno == EINTR)						//发送中收到信号出现中断，应接着发送
 			{
-				printf("-----EINTR-----");
+				printf("-----EINTR-----\n");
 				continue; 
 			}
 			else 
 			{
-				perror("send error\n");
+				printf("send error\n");
 				exit(-1);
 			}	
 		}
 		
-		memset(buf, 0, sizeof(buf));							//send完之后就可以清空buf
+		memset(buf, 0, sizeof(buf));					//send完之后就可以清空 buf
 	}
 	
-	sprintf(buf+strlen(buf), "</table></body></html>");
-	send(fd, buf, strlen(buf), 0);
+	sprintf(buf+strlen(buf), "</table></body></html>"); //拼接response完整的 html
+	send(cfd, buf, strlen(buf), 0);					   	//发送 response
 	
-	printf("dir message send OK!");
+	printf("dir message send OK!\n");
 }
 
-//void http_request(int fd, const char * file)
-void http_request(int fd, const char * request)
+//获取并处理browser的请求
+void http_request(int cfd, const char * request)
 {
-	
-	
 	char method[16], path[256], protocol[16];
 		
-	sscanf(request, "%[^ ] %[^ ] %[^ ]", method, path, protocol);
+	sscanf(request, "%[^ ] %[^ ] %[^ ]", method, path, protocol);	//利用【正则表达式】获取 http 请求头的信息. GET /hello.c HTTP/1.1
 		
-	printf("method=%s path=%s protocol=%s \n", method, path, protocol);
+	//printf("method=%s path=%s protocol=%s \n", method, path, protocol);	//解码前，打印出获取到的请求头的信息
 	
-	decode_str(path,path);
+	decode_str(path,path);								//解码请求的文件名  
+	printf("method=%s path=%s protocol=%s \n", method, path, protocol);	//解码后，打印出获取到的请求头的信息
 	
-	char *file = path + 1;	//去掉path中的/ 获取访问文件名
-	if(strcmp(path,"/") == 0)
+	char *file = path + 1;								//去掉path中的/ 获取访问文件名
+	if(strcmp(path,"/") == 0)							//如果请求没指定文件，就是请求当前文件夹的内容
 	{
-		file = "./";		//资源目录当前位置
+		file = "./";
 	}
 	
 	struct stat sbuf;
-	int ret = stat(file, &sbuf);
+	int ret = stat(file, &sbuf);						//获取指定文件或当前文件夹的目录属性
 	if(ret != 0)
 	{
-		send_error(fd, 404, "Not Found", "No such file or direntry");
+		printf("stat error.\n");
+		send_error(cfd, 404, "Not Found", "No such file or direntry");	//没有指定文件的错误response
 		//perror("stat error \n");
 		//exit(-1);		
 	}
 	
-	if(S_ISREG(sbuf.st_mode))
+	if(S_ISREG(sbuf.st_mode))							//如果文件属性为常规文件的response操作
 	{
-		//发送 http 响应头	
-		//send_respond(fd, 200, "OK", "Content-Type: text/plain;  charset=utf-8", sbuf.st_size);
-		send_respond(fd, 200, "OK", get_file_type(file), sbuf.st_size);
+		send_respond(cfd, 200, "OK", get_file_type(file), sbuf.st_size);		//发送 http 响应头	
 		
-		//发送 文件内容
-		send_file(fd, file);
+		send_file(cfd, file);							//发送 文件内容
 	}
-	else if (S_ISDIR(sbuf.st_mode))
+	else if (S_ISDIR(sbuf.st_mode))						//如果文件属性为目录的response操作
 	{
-		send_respond(fd, 200, "OK", get_file_type(".html"), -1);
+		send_respond(cfd, 200, "OK", get_file_type(".html"), -1);			//发送 http 响应头	
 		
-		send_dir(fd, file);
+		send_dir(cfd, file);								//处理要response的内容
 	}
 }
 
-void do_read(int fd, int epfd)
+//读取 browser 发来的请求
+void do_read(int cfd, int epfd)							
 {
-	char line[1024] = {0};
+	char line[1024] = {0};								//用来读取的 内存区
 	
-	int len = get_line(fd, line, sizeof(line));	//读 http 请求协议 首行 GET /hello.c HTTP/1.1
-	if(len == 0)
+	int len = get_line(cfd, line, sizeof(line));		//获取一行，读 http 请求协议 首行 GET /hello.c HTTP/1.1，http协议每行以\r\n 
+	if(len == 0)										//表示browser端关闭连接
 	{
 		printf("client closed\n");
-		disconnect(fd, epfd);
+		disconnect(cfd, epfd);
 	}
-	else 
+	else
 	{
-		/*
-		char method[16], path[256], protocol[16];
-		
-		sscanf(line, "%[^ ] %[^ ] %[^ ]", method, path, protocol);
-		
-		printf("method=%s path=%s protocol=%s \n", method, path, protocol);
-		*/
-		
-		while(1)
+		///*
+		while(1)										//必须读出所有的 http 头信息，否则后面对相应的fd发送请求总出问题
 		{
 			char buf[1024] = {0};
-			len = get_line(fd, buf, sizeof(buf));
-			if(len == '\n')
+			len = get_line(cfd, buf, sizeof(buf));
+			if(len == -1)
 			{
+				printf("get_line error.\n");
 				break;
 			}
-			else if(len == -1) 
+			else
 			{
-				break;
+				printf("buf:%s",buf);
 			}
 		}
+		//*/
 		
 		//判断get请求
 		if(strncasecmp(line, "GET", 3) == 0)
 		{
-			//char *file = path + 1;
-			
 			//处理http请求
-			http_request(fd, line);
+			http_request(cfd, line);
 			
-			//关闭套接字， cfd 从epoll上del。 http响应完应断开连接。
-			disconnect(fd, epfd);
+			//处理完请求就关闭套接字，并加上favicon.ico图标就可以避免意料之外的错误
+			disconnect(cfd, epfd);
 		}
 	}
 	
