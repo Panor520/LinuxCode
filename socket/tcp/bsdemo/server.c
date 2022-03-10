@@ -232,7 +232,7 @@ void send_respond(int cfd, int no, char *disp,const char *type, int len)
 void send_file(int cfd, const char * file)				
 {
 	int n, ret;
-	char buf[1024];										//发送response的缓冲区
+	char buf[4096];										//发送response的缓冲区
 	
 	int ffd = open(file, O_RDONLY);						//打开要读的文件
 	if(ffd == -1)
@@ -243,22 +243,22 @@ void send_file(int cfd, const char * file)
 		//exit(-1);
 	}
 	
-	while(1)											//循环读取打开文件的数据并发送 response
+	while(1)												//循环读取打开文件的数据并发送 response
 	{
 		memset(buf, 0, sizeof(buf));
-		n = read(ffd, buf, sizeof(buf));				//读取文件内容
-		if(n == 0)										//读到文件结尾就跳出
+		n = read(ffd, buf, sizeof(buf));					//读取文件内容
+		if(n == 0)											//读到文件结尾就跳出
 			break;
 		else if(n == -1) 
 		{
-			if(errno == EAGAIN || errno == EWOULDBLOCK)							//不是真的发送出错，非阻塞传输，缓冲区满等产生时，应接着尝试发送
+			if(errno == EAGAIN || errno == EWOULDBLOCK)		//不是真的发送出错，非阻塞传输，缓冲区满等产生时，应接着尝试发送
 			{
-				printf("-----read EAGAIN-----\n"); 		//读大文件时会多次进到这里
+				printf("-----read EAGAIN-----\n"); 			//读大文件时会多次进到这里
 				continue;
 			}
 			else if(errno == EINTR)
 			{
-				printf("-----read EINTR-----\n");				//不是真的发送出错，发送中收到信号出现中断，应接着发送
+				printf("-----read EINTR-----\n");			//不是真的发送出错，发送中收到信号出现中断，应接着发送
 				continue; 
 			}
 			else 
@@ -268,18 +268,18 @@ void send_file(int cfd, const char * file)
 			}
 		}
 		
-		ret = send(cfd, buf, n, 0); 					//发送文件内容到通信 fd 
+		ret = send(cfd, buf, n, 0); 						//发送文件内容到通信 fd 
 		
 		if(ret == -1)
 		{
-			if(errno == EAGAIN || errno == EWOULDBLOCK)							//不是真的发送出错，非阻塞传输，缓冲区满等产生时，应接着尝试发送
+			if(errno == EAGAIN || errno == EWOULDBLOCK)		//不是真的发送出错，非阻塞传输，缓冲区满等产生时，应接着尝试发送
 			{
-				printf("-----send_file EAGAIN-----\n"); 			//发送大文件时会多次进到这里
+				printf("-----send_file EAGAIN-----\n"); 	//发送大文件时会多次进到这里,处理大文件时这里会有问题
 				continue;
 			}
 			else if(errno == EINTR)
 			{
-				printf("-----send_file EINTR-----\n");				//不是真的发送出错，发送中收到信号出现中断，应接着发送
+				printf("-----send_file EINTR-----\n");		//不是真的发送出错，发送中收到信号出现中断，应接着发送
 				continue; 
 			}
 			else 
