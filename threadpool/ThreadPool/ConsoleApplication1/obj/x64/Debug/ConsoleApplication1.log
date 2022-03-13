@@ -1,0 +1,53 @@
+﻿  Cleaning remote project directory
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(513,5): warning MSB8028: The intermediate directory (C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\obj\x64\Debug\) contains files shared from another project (ConsoleApplication1.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+  Validating sources
+  Copying sources remotely to '192.168.3.250'
+  Validating architecture
+  Validating architecture
+  Starting remote build
+  Compiling sources:
+  main.c
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\main.c(6,5): warning : implicit declaration of function ‘sleep’ [-Wimplicit-function-declaration]
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\main.c(6,5): warning :     6 |     sleep(10);
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\main.c(6,5): warning :       |     ^~~~~
+  threadpool.c
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(46,4): warning : implicit declaration of function ‘printf’ [-Wimplicit-function-declaration]
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(46,4): warning :    46 |    printf("malloc ThreadPool error.\n");
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(46,4): warning :       |    ^~~~~~
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(46,4): warning : incompatible implicit declaration of built-in function ‘printf’
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(2,1): message : include ‘<stdio.h>’ or provide a declaration of ‘printf’
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(2,1): message :     1 | #include "threadpool.h"
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(2,1): message :   +++ |+#include <stdio.h>
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(2,1): message :     2 |
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(51,58): warning : conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(51,58): warning :    51 |   pool->threadIDs = (pthread_t*)malloc(sizeof(pthread_t) * max);
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(51,58): warning :       |                                                          ^
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(54,4): warning : incompatible implicit declaration of built-in function ‘printf’
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(54,4): warning :    54 |    printf("malloc threadIDs error.\n");
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(54,4): warning :       |    ^~~~~~
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(54,4): message : include ‘<stdio.h>’ or provide a declaration of ‘printf’
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(58,3): warning : implicit declaration of function ‘memset’ [-Wimplicit-function-declaration]
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(58,3): warning :    58 |   memset(pool->threadIDs, 0, sizeof(pthread_t) * max);
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(58,3): warning :       |   ^~~~~~
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(58,3): warning : incompatible implicit declaration of built-in function ‘memset’
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(2,1): message : include ‘<string.h>’ or provide a declaration of ‘memset’
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(2,1): message :     1 | #include "threadpool.h"
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(2,1): message :   +++ |+#include <string.h>
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(2,1): message :     2 |
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(58,48): warning : conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(58,48): warning :    58 |   memset(pool->threadIDs, 0, sizeof(pthread_t) * max);
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(58,48): warning :       |                                                ^
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(71,4): warning : incompatible implicit declaration of built-in function ‘printf’
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(71,4): warning :    71 |    printf("mutex or cond init error.\n");
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(71,4): warning :       |    ^~~~~~
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(71,4): message : include ‘<stdio.h>’ or provide a declaration of ‘printf’
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(76,37): warning : conversion to ‘long unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(76,37): warning :    76 |   pool->taskQ = malloc(sizeof(Task) * queueSize);
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(76,37): warning :       |                                     ^
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(85,42): error : ‘manager’ undeclared (first use in this function)
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(85,42): error :    85 |   pthread_create(&pool->managerID, NULL, manager, NULL);   //���������߳�
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(85,42): error :       |                                          ^~~~~~~
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(85,42): message : each undeclared identifier is reported only once for each function it appears in
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(88,46): error : ‘worker’ undeclared (first use in this function)
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(88,46): error :    88 |    pthread_create(&pool->threadIDs[i], NULL, worker, NULL); //���������߳�
+C:\Users\LPName\source\repos\ConsoleApplication1\ConsoleApplication1\threadpool.c(88,46): error :       |                                              ^~~~~~
