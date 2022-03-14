@@ -1,11 +1,15 @@
-本文件夹都是实现线程池的基础知识
+本文件夹中所有内容都是线程池相关代码。
 
-利用互斥锁 和 条件变量 实现 生产者消费者模型的DEMO:
-	ProducerConsumerModel.c
-		一个线程创建产品，一个线程消费产品，利用锁和条件变量控制生产和消费流程。
-
-bulid command:
-	gcc ProducerConsumerModel.c -o ProducerConsumerModel -lpthread
+文件夹介绍：
+	Thread_Sync
+			利用线程同步的互斥锁 和 条件变量 实现 生产者消费者模型的demo. 学习线程池的必备知识
 	
-test command:
-	./ProducerConsumerModel
+	ThreadPool_Simple
+			简单实现的线程池demo，内容结构比较乱，但符合初学者思维。
+	
+	
+	ThreadPool_Better
+			优化后的线程池demo，调理更清晰些，适合长久保留的知识。
+
+
+	
